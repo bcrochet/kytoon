@@ -293,6 +293,11 @@ fi
     configs = Util.load_configs
     conn = self.init_connection
 
+    # If the image_ref is not a url (starts with http) then get the actual ref
+    image_ref =  self.find_image_by_name(image_ref) unless image_ref =~ /^http/
+    # Same goes for the flavor ref
+    flavor_ref = self.find_flavor_by_name(flavor_ref) unless flavor_ref =~ /^http/
+
     options = {
       :name => "#{group_id}_#{hostname}",
       :image_ref => image_ref,
@@ -429,6 +434,25 @@ fi
       puts "Error deleting server: #{e.message}"
     end
   end
+
+  private
+    def self.find_by_name(name)
+      return Proc.new { |coll| coll.find { |item| item.name == name }.links.find { |link| link["rel"] == "self" }["href"] }
+    end
+
+    def self.find_image_by_name(image_name)
+      conn = self.init_connection
+
+      image_ref = self.find_by_name(image_name).call(conn.images)
+      image_ref
+    end
+
+    def self.find_flavor_by_name(flavor_name)
+      conn = self.init_connection
+
+      flavor_ref = self.find_by_name(flavor_name).call(conn.flavors)
+      flavor_ref
+    end
 
 end
 
